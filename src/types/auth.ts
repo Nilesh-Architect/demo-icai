@@ -38,6 +38,9 @@ export interface Post {
   likes: string[];
   comments: Comment[];
   image?: string;
+  type?: 'post' | 'job' | 'announcement';
+  jobDetails?: JobPost;
+  isApproved?: boolean;
 }
 
 export interface Comment {

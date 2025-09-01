@@ -39,13 +39,13 @@ const App = () => (
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>
-                  <Dashboard />
+                  <Feed />
                 </Layout>
               </ProtectedRoute>
             } />
             
             <Route path="/feed" element={
-              <ProtectedRoute requiredRole="ca">
+              <ProtectedRoute>
                 <Layout>
                   <Feed />
                 </Layout>
@@ -61,7 +61,7 @@ const App = () => (
             } />
             
             <Route path="/dashboard" element={
-              <ProtectedRoute requiredRole="enterprise">
+              <ProtectedRoute>
                 <Layout>
                   <Dashboard />
                 </Layout>
@@ -71,7 +71,7 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute requiredRole="admin">
                 <Layout>
-                  <Dashboard />
+                  <Feed />
                 </Layout>
               </ProtectedRoute>
             } />
@@ -111,7 +111,7 @@ const App = () => (
             <Route path="/content" element={
               <ProtectedRoute requiredRole="admin">
                 <Layout>
-                  <Dashboard />
+                  <Feed />
                 </Layout>
               </ProtectedRoute>
             } />

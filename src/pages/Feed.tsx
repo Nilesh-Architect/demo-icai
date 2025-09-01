@@ -4,13 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Heart, MessageCircle, Share, Send, Image as ImageIcon, MoreHorizontal } from 'lucide-react';
-import { Post, Comment } from '@/types/auth';
+import { Heart, MessageCircle, Share, Send, Image as ImageIcon, MoreHorizontal, Briefcase, CheckCircle, XCircle, Megaphone, MapPin, Clock, Building2 } from 'lucide-react';
+import { Post, Comment, JobPost } from '@/types/auth';
 import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 const Feed: React.FC = () => {
   const { user } = useAuth();
   const [newPost, setNewPost] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [jobLocation, setJobLocation] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [showJobForm, setShowJobForm] = useState(false);
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [posts, setPosts] = useState<Post[]>([
     {
       id: '1',
@@ -26,6 +33,8 @@ const Feed: React.FC = () => {
       content: 'Just completed a complex GST audit for a multinational client. The new compliance requirements are challenging but manageable with proper planning. #GST #Audit #ICAI',
       createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
       likes: ['1', '3'],
+      type: 'post',
+      isApproved: true,
       comments: [
         {
           id: '1',
@@ -52,9 +61,40 @@ const Feed: React.FC = () => {
         company: 'TechCorp India',
         profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=techcorp'
       },
-      content: 'We\'re looking for experienced CAs to join our finance team in Bangalore. Excellent opportunity to work with cutting-edge fintech solutions. DM for details! #Hiring #CA #Fintech',
+      content: 'We\'re looking for experienced CAs to join our finance team in Bangalore. Excellent opportunity to work with cutting-edge fintech solutions.',
       createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
       likes: ['1', '2', '5'],
+      type: 'job',
+      isApproved: true,
+      jobDetails: {
+        id: '2',
+        title: 'Senior Finance Analyst',
+        company: 'TechCorp India',
+        location: 'Bangalore, Karnataka',
+        description: 'We\'re looking for experienced CAs to join our finance team. Excellent opportunity to work with cutting-edge fintech solutions.',
+        requirements: ['CA qualification', '3+ years experience', 'Fintech knowledge'],
+        postedBy: '4',
+        postedAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
+        applicants: []
+      },
+      comments: []
+    },
+    {
+      id: '3',
+      author: {
+        id: '3',
+        name: 'Dr. Anjali Patel',
+        email: 'admin@demo.com',
+        role: 'admin',
+        title: 'ICAI Secretariat',
+        company: 'ICAI Head Office',
+        profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=anjali'
+      },
+      content: 'Important Update: New CPE requirements are now live. All members must complete 40 hours of Continuing Professional Education by March 2024. Visit ICAI portal for detailed guidelines.',
+      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
+      likes: ['1', '2', '4', '5'],
+      type: 'announcement',
+      isApproved: true,
       comments: []
     }
   ]);
@@ -68,14 +108,115 @@ const Feed: React.FC = () => {
       content: newPost,
       createdAt: new Date(),
       likes: [],
-      comments: []
+      comments: [],
+      type: 'post',
+      isApproved: user.role === 'admin'
     };
 
     setPosts([post, ...posts]);
     setNewPost('');
     toast({
       title: "Post Created",
-      description: "Your post has been shared successfully!"
+      description: user.role === 'admin' ? "Post published!" : "Post submitted for review!"
+    });
+  };
+
+  const handleCreateJob = () => {
+    if (!jobTitle.trim() || !jobLocation.trim() || !jobDescription.trim() || !user) return;
+
+    const jobPost: JobPost = {
+      id: Date.now().toString(),
+      title: jobTitle,
+      company: user.company || 'Company',
+      location: jobLocation,
+      description: jobDescription,
+      requirements: ['CA qualification required'],
+      postedBy: user.id,
+      postedAt: new Date(),
+      applicants: []
+    };
+
+    const post: Post = {
+      id: Date.now().toString(),
+      author: user,
+      content: `New job opportunity: ${jobTitle} at ${user.company || 'our company'} in ${jobLocation}`,
+      createdAt: new Date(),
+      likes: [],
+      comments: [],
+      type: 'job',
+      jobDetails: jobPost,
+      isApproved: true
+    };
+
+    setPosts([post, ...posts]);
+    setJobTitle('');
+    setJobLocation('');
+    setJobDescription('');
+    setShowJobForm(false);
+    toast({
+      title: "Job Posted",
+      description: "Your job opportunity has been published!"
+    });
+  };
+
+  const handleCreateAnnouncement = () => {
+    if (!newPost.trim() || !user) return;
+
+    const post: Post = {
+      id: Date.now().toString(),
+      author: user,
+      content: newPost,
+      createdAt: new Date(),
+      likes: [],
+      comments: [],
+      type: 'announcement',
+      isApproved: true
+    };
+
+    setPosts([post, ...posts]);
+    setNewPost('');
+    setShowAnnouncementForm(false);
+    toast({
+      title: "Announcement Published",
+      description: "ICAI announcement has been published to all users!"
+    });
+  };
+
+  const handleApprovePost = (postId: string) => {
+    setPosts(posts.map(post => 
+      post.id === postId ? { ...post, isApproved: true } : post
+    ));
+    toast({
+      title: "Post Approved",
+      description: "The post has been approved and is now visible to all users."
+    });
+  };
+
+  const handleRejectPost = (postId: string) => {
+    setPosts(posts.filter(post => post.id !== postId));
+    toast({
+      title: "Post Rejected",
+      description: "The post has been removed from the feed."
+    });
+  };
+
+  const handleApplyToJob = (jobId: string) => {
+    if (!user) return;
+    
+    setPosts(posts.map(post => {
+      if (post.id === jobId && post.jobDetails) {
+        const updatedJob = {
+          ...post.jobDetails,
+          applicants: [...post.jobDetails.applicants, user.id]
+        };
+        return { ...post, jobDetails: updatedJob };
+      }
+      return post;
+    }));
+    
+    toast({
+      title: "Application Submitted",
+      description: "Your application has been sent to the employer!"
     });
   };
 
@@ -105,6 +246,12 @@ const Feed: React.FC = () => {
     return `${Math.floor(diffInHours / 24)}d ago`;
   };
 
+  // Filter posts based on user role and approval status
+  const visiblePosts = posts.filter(post => {
+    if (user?.role === 'admin') return true; // Admins see all posts
+    return post.isApproved; // Other users only see approved posts
+  });
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Create Post */}
@@ -116,12 +263,56 @@ const Feed: React.FC = () => {
               <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <Textarea
-                placeholder="What's on your professional mind?"
-                value={newPost}
-                onChange={(e) => setNewPost(e.target.value)}
-                className="min-h-[80px] border-none resize-none focus-visible:ring-0 p-0 text-base"
-              />
+              {!showJobForm && !showAnnouncementForm && (
+                <Textarea
+                  placeholder={
+                    user?.role === 'enterprise' 
+                      ? "Share an update or post a job opportunity..." 
+                      : user?.role === 'admin' 
+                      ? "Share an announcement or update..." 
+                      : "What's on your professional mind?"
+                  }
+                  value={newPost}
+                  onChange={(e) => setNewPost(e.target.value)}
+                  className="min-h-[80px] border-none resize-none focus-visible:ring-0 p-0 text-base"
+                />
+              )}
+              
+              {/* Job Form */}
+              {showJobForm && (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Job Title"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Location"
+                    value={jobLocation}
+                    onChange={(e) => setJobLocation(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                  />
+                  <Textarea
+                    placeholder="Job Description"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    className="min-h-[80px]"
+                  />
+                </div>
+              )}
+
+              {/* Announcement Form */}
+              {showAnnouncementForm && (
+                <Textarea
+                  placeholder="Write your ICAI announcement..."
+                  value={newPost}
+                  onChange={(e) => setNewPost(e.target.value)}
+                  className="min-h-[80px] border-none resize-none focus-visible:ring-0 p-0 text-base"
+                />
+              )}
             </div>
           </div>
         </CardHeader>
@@ -132,22 +323,79 @@ const Feed: React.FC = () => {
                 <ImageIcon className="w-4 h-4 mr-2" />
                 Photo
               </Button>
+              
+              {/* Enterprise Job Posting */}
+              {user?.role === 'enterprise' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowJobForm(!showJobForm);
+                    setShowAnnouncementForm(false);
+                  }}
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  {showJobForm ? 'Cancel' : 'Job Post'}
+                </Button>
+              )}
+              
+              {/* Admin Announcement */}
+              {user?.role === 'admin' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowAnnouncementForm(!showAnnouncementForm);
+                    setShowJobForm(false);
+                  }}
+                >
+                  <Megaphone className="w-4 h-4 mr-2" />
+                  {showAnnouncementForm ? 'Cancel' : 'Announcement'}
+                </Button>
+              )}
             </div>
-            <Button 
-              onClick={handleCreatePost}
-              disabled={!newPost.trim()}
-              className="bg-gradient-primary hover:bg-primary-hover"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              Post
-            </Button>
+            
+            <div className="flex items-center space-x-2">
+              {showJobForm && (
+                <Button 
+                  onClick={handleCreateJob}
+                  disabled={!jobTitle.trim() || !jobLocation.trim() || !jobDescription.trim()}
+                  className="bg-gradient-primary hover:bg-primary-hover"
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  Post Job
+                </Button>
+              )}
+              
+              {showAnnouncementForm && (
+                <Button 
+                  onClick={handleCreateAnnouncement}
+                  disabled={!newPost.trim()}
+                  className="bg-gradient-primary hover:bg-primary-hover"
+                >
+                  <Megaphone className="w-4 h-4 mr-2" />
+                  Publish
+                </Button>
+              )}
+              
+              {!showJobForm && !showAnnouncementForm && (
+                <Button 
+                  onClick={handleCreatePost}
+                  disabled={!newPost.trim()}
+                  className="bg-gradient-primary hover:bg-primary-hover"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Post
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Posts Feed */}
       <div className="space-y-4">
-        {posts.map((post) => (
+        {visiblePosts.map((post) => (
           <Card key={post.id}>
             <CardContent className="p-6">
               {/* Post Header */}
@@ -162,19 +410,114 @@ const Feed: React.FC = () => {
                     {post.author.title && (
                       <span className="text-sm text-muted-foreground">• {post.author.title}</span>
                     )}
+                    
+                    {/* Post Type Badge */}
+                    {post.type === 'job' && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        <Briefcase className="w-3 h-3 mr-1" />
+                        Job
+                      </Badge>
+                    )}
+                    {post.type === 'announcement' && (
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                        <Megaphone className="w-3 h-3 mr-1" />
+                        ICAI
+                      </Badge>
+                    )}
+                    
+                    {/* Approval Status for Admins */}
+                    {user?.role === 'admin' && !post.isApproved && (
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                        Pending Review
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {post.author.company} • {formatTimeAgo(post.createdAt)}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
+                
+                {/* Admin Actions */}
+                {user?.role === 'admin' && !post.isApproved && (
+                  <div className="flex items-center space-x-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleApprovePost(post.id)}
+                      className="text-green-600 hover:text-green-700"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleRejectPost(post.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+                
+                {(user?.role !== 'admin' || post.isApproved) && (
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
 
               {/* Post Content */}
               <div className="mb-4">
                 <p className="text-base leading-relaxed">{post.content}</p>
+                
+                {/* Job Details */}
+                {post.type === 'job' && post.jobDetails && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="font-semibold text-lg">{post.jobDetails.title}</h4>
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
+                          <span className="flex items-center">
+                            <Building2 className="w-4 h-4 mr-1" />
+                            {post.jobDetails.company}
+                          </span>
+                          <span className="flex items-center">
+                            <MapPin className="w-4 h-4 mr-1" />
+                            {post.jobDetails.location}
+                          </span>
+                          <span className="flex items-center">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {formatTimeAgo(post.jobDetails.postedAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm mb-3">{post.jobDetails.description}</p>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        {post.jobDetails.applicants.length} applicant{post.jobDetails.applicants.length !== 1 ? 's' : ''}
+                      </div>
+                      
+                      {user?.role === 'ca' && !post.jobDetails.applicants.includes(user.id) && (
+                        <Button 
+                          size="sm"
+                          onClick={() => handleApplyToJob(post.id)}
+                          className="bg-gradient-primary hover:bg-primary-hover"
+                        >
+                          Apply Now
+                        </Button>
+                      )}
+                      
+                      {user?.role === 'ca' && post.jobDetails.applicants.includes(user.id) && (
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          Applied
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Post Actions */}
